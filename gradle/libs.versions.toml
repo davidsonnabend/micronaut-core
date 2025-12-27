@@ -6,7 +6,7 @@ brotli4j = "1.18.0"
 bytebuddy = "1.18.3"
 caffeine = "2.9.3"
 classgraph = "4.8.184"
-compile-testing = "0.21.0"
+compile-testing = "0.23.0"
 
 geb = "7.0"
 # be sure to update graal version in gradle.properties as well
