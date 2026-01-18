@@ -205,14 +205,13 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
      */
     protected <T> RequestArgumentBinder findBinder(Argument<T> argument, Class<? extends Annotation> annotationType) {
         TypeAndAnnotation key = new TypeAndAnnotation(argument, annotationType);
-        return argumentBinderCache.computeIfAbsent(key, key1 -> {
+        Optional<RequestArgumentBinder> opt = argumentBinderCache.computeIfAbsent(key, key1 -> {
             RequestArgumentBinder requestArgumentBinder = byTypeAndAnnotation.get(key1);
             if (requestArgumentBinder == null) {
                 Class<?> javaType = key1.type.getType();
                 for (Map.Entry<TypeAndAnnotation, RequestArgumentBinder> entry : byTypeAndAnnotation.entrySet()) {
                     TypeAndAnnotation typeAndAnnotation = entry.getKey();
                     if (typeAndAnnotation.annotation == annotationType) {
-
                         Argument<?> t = typeAndAnnotation.type;
                         if (t.getType().isAssignableFrom(javaType)) {
                             requestArgumentBinder = entry.getValue();
@@ -222,14 +221,14 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
                         }
                     }
                 }
-
                 if (requestArgumentBinder == null) {
                     // try the raw type
                     requestArgumentBinder = byTypeAndAnnotation.get(new TypeAndAnnotation(Argument.of(argument.getType()), annotationType));
                 }
             }
             return Optional.ofNullable(requestArgumentBinder);
-        }).orElse(null);
+        });
+        return opt.orElse((ctx, req) -> ArgumentBinder.BindingResult.UNSATISFIED);
 
     }
 

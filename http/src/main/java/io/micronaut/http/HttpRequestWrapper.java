@@ -67,7 +67,7 @@ public class HttpRequestWrapper<B> extends HttpMessageWrapper<B> implements Http
     }
 
     @Override
-    public HttpRequest<B> setAttribute(CharSequence name, Object value) {
+    public HttpRequest<B> setAttribute(CharSequence name, @org.jspecify.annotations.Nullable Object value) {
         return getDelegate().setAttribute(name, value);
     }
 
@@ -127,7 +127,7 @@ public class HttpRequestWrapper<B> extends HttpMessageWrapper<B> implements Http
     }
 
     @Override
-    public String getServerName() {
+    public @org.jspecify.annotations.Nullable String getServerName() {
         return getDelegate().getServerName();
     }
 

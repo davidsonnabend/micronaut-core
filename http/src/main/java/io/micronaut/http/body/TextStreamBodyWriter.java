@@ -123,9 +123,9 @@ final class TextStreamBodyWriter<T> implements MessageBodyWriter<T> {
             body = baos.toByteArray();
         }
 
-        writeAttribute(output, COMMENT_PREFIX, event.getComment());
-        writeAttribute(output, ID_PREFIX, event.getId());
-        writeAttribute(output, EVENT_PREFIX, event.getName());
+        if (event.getComment() != null) writeAttribute(output, COMMENT_PREFIX, event.getComment());
+        if (event.getId() != null) writeAttribute(output, ID_PREFIX, event.getId());
+        if (event.getName() != null) writeAttribute(output, EVENT_PREFIX, event.getName());
         Duration retry = event.getRetry();
         if (retry != null) {
             writeAttribute(output, RETRY_PREFIX, String.valueOf(retry.toMillis()));
@@ -184,6 +184,7 @@ final class TextStreamBodyWriter<T> implements MessageBodyWriter<T> {
 
         ByteBufferOutput(ByteBufferFactory<?, ?> bufferFactory) {
             this.bufferFactory = bufferFactory;
+            this.buffer = bufferFactory.wrap(new byte[0]);
         }
 
         @Override

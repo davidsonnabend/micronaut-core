@@ -64,7 +64,7 @@ final class ConversionTextPlainHandler<T> implements MessageBodyHandler<T> {
     }
 
     @Override
-    public T read(Argument<T> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
+    public T read(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
         String text;
         try {
             text = new String(inputStream.readAllBytes(), configuration.getDefaultCharset());
@@ -75,7 +75,7 @@ final class ConversionTextPlainHandler<T> implements MessageBodyHandler<T> {
     }
 
     @Override
-    public T read(Argument<T> type, MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
+    public T read(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
         T r = convert(type, byteBuffer.toString(configuration.getDefaultCharset()));
         if (byteBuffer instanceof ReferenceCounted rc) {
             rc.release();

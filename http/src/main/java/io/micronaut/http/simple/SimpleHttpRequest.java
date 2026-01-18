@@ -49,7 +49,7 @@ public class SimpleHttpRequest<B> implements MutableHttpRequest<B> {
 
     private final HttpMethod method;
     private URI uri;
-    private Object body;
+    private @org.jspecify.annotations.Nullable Object body;
 
     /**
      * Simple {@link MutableHttpRequest} implementation.
@@ -58,7 +58,7 @@ public class SimpleHttpRequest<B> implements MutableHttpRequest<B> {
      * @param url    the URI of the request
      * @param body   the optional body of the request
      */
-    public SimpleHttpRequest(HttpMethod method, String url, B body) {
+    public SimpleHttpRequest(HttpMethod method, String url, @org.jspecify.annotations.Nullable B body) {
         this.method = method;
         try {
             this.uri = new URI(url);

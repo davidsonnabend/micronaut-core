@@ -86,17 +86,17 @@ public final class WritableBodyWriter implements TypedMessageBodyHandler<Writabl
     }
 
     @Override
-    public Publisher<? extends Writable> readChunked(Argument<Writable> type, MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
+    public Publisher<? extends Writable> readChunked(Argument<Writable> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
         return Flux.from(input).map(this::read0);
     }
 
     @Override
-    public Writable read(Argument<Writable> type, MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
+    public Writable read(Argument<Writable> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
         return read0(byteBuffer);
     }
 
     @Override
-    public Writable read(Argument<Writable> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
+    public Writable read(Argument<Writable> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
         String s;
         try {
             s = new String(inputStream.readAllBytes(), applicationConfiguration.getDefaultCharset());

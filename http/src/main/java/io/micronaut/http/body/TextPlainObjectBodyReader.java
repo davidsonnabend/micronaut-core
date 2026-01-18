@@ -61,23 +61,25 @@ public final class TextPlainObjectBodyReader<T> implements TypedMessageBodyReade
     }
 
     @Override
-    public boolean isReadable(Argument<T> type, MediaType mediaType) {
+    public boolean isReadable(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType) {
         return mediaType != null && mediaType.matches(MediaType.TEXT_PLAIN_TYPE);
     }
 
     @Override
-    public T read(Argument<T> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
+    public T read(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
         try {
-            String string = new String(inputStream.readAllBytes(), getCharset(mediaType, httpHeaders));
-            return conversionService.convertRequired(string, type);
+            Charset cs = getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders);
+            String string = new String(inputStream.readAllBytes(), cs);
+            return java.util.Objects.requireNonNull(conversionService.convert(string, type).orElse(null));
         } catch (IOException e) {
             throw new CodecException("Failed to read InputStream", e);
         }
     }
 
     @Override
-    public T read(Argument<T> type, MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
-        return read0(type, byteBuffer, getCharset(mediaType, httpHeaders));
+    public T read(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
+        Charset cs = getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders);
+        return read0(type, byteBuffer, cs);
     }
 
     private T read0(Argument<T> type, ByteBuffer<?> byteBuffer, Charset charset) {
@@ -86,12 +88,12 @@ public final class TextPlainObjectBodyReader<T> implements TypedMessageBodyReade
         if (byteBuffer instanceof ReferenceCounted rc) {
             rc.release();
         }
-        return conv;
+        return java.util.Objects.requireNonNull(conv);
     }
 
     @Override
-    public Publisher<T> readChunked(Argument<T> type, MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
-        return Flux.from(input).map(byteBuffer -> read0(type, byteBuffer, getCharset(mediaType, httpHeaders)));
+    public Publisher<T> readChunked(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
+        return Flux.from(input).map(byteBuffer -> read0(type, byteBuffer, getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders)));
     }
 
     private Charset getCharset(MediaType mediaType, Headers httpHeaders) {

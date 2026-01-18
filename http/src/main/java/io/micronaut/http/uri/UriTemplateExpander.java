@@ -214,7 +214,7 @@ final class UriTemplateExpander implements UriTemplateParser.PartVisitor {
         return '?';
     }
 
-    private String applyModifier(String value, String modifier) {
+    private String applyModifier(String value, @org.jspecify.annotations.Nullable String modifier) {
         if (modifier == null) {
             return value;
         }

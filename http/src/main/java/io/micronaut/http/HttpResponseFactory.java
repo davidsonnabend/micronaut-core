@@ -35,7 +35,7 @@ public interface HttpResponseFactory {
      * @param <T>  The body type
      * @return The ok response with the given body
      */
-    <T> MutableHttpResponse<T> ok(T body);
+    <T> MutableHttpResponse<T> ok(@org.jspecify.annotations.Nullable T body);
 
     /**
      * Return a response for the given status.
@@ -45,7 +45,7 @@ public interface HttpResponseFactory {
      * @param <T>    The response type
      * @return The response
      */
-    <T> MutableHttpResponse<T> status(HttpStatus status, String reason);
+    <T> MutableHttpResponse<T> status(HttpStatus status, @org.jspecify.annotations.Nullable String reason);
 
     /**
      * Return a response for the given status.
@@ -55,7 +55,7 @@ public interface HttpResponseFactory {
      * @param <T>    The response type
      * @return The response
      */
-    <T> MutableHttpResponse<T> status(int status, String reason);
+    <T> MutableHttpResponse<T> status(int status, @org.jspecify.annotations.Nullable String reason);
 
     /**
      * Return a response for the given status.

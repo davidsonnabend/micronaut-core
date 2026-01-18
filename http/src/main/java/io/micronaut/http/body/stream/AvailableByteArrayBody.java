@@ -37,7 +37,7 @@ import java.util.Objects;
  */
 @Experimental
 public final class AvailableByteArrayBody extends InternalByteBody implements CloseableAvailableByteBody {
-    private ReadBuffer readBuffer;
+    private @org.jspecify.annotations.Nullable ReadBuffer readBuffer;
 
     private AvailableByteArrayBody(ReadBuffer readBuffer) {
         this.readBuffer = Objects.requireNonNull(readBuffer, "readBuffer");

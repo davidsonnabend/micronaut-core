@@ -59,7 +59,7 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
     /**
      * Any stream error.
      */
-    private Throwable error;
+    private @org.jspecify.annotations.Nullable Throwable error;
     /**
      * Number of reserved subscriber spots. A new subscription MUST be preceded by a
      * reservation, and every reservation MUST have a subscription.
@@ -68,11 +68,11 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
     /**
      * Active subscribers.
      */
-    private List<BufferConsumer> subscribers;
+    private @Nullable List<BufferConsumer> subscribers;
     /**
      * Active subscribers that need the fully buffered body.
      */
-    private List<DelayedExecutionFlow<ReadBuffer>> fullSubscribers;
+    private @Nullable List<DelayedExecutionFlow<ReadBuffer>> fullSubscribers;
     /**
      * This flag is only used in tests, to verify that the BufferConsumer methods arent called
      * in a reentrant fashion.
@@ -92,9 +92,9 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
      * If not all {@link #subscribers} are ready or there are {@link #fullSubscribers}, this list
      * buffers input data.
      */
-    private List<ReadBuffer> buffer;
+    private @Nullable List<ReadBuffer> buffer;
 
-    private BufferLengthExceededException bufferLimitsExceeded = null;
+    private @Nullable BufferLengthExceededException bufferLimitsExceeded = null;
 
     public BaseSharedBuffer(ReadBufferFactory readBufferFactory, BodySizeLimits limits, BufferConsumer.Upstream rootUpstream) {
         this.readBufferFactory = readBufferFactory;
@@ -127,7 +127,7 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
         return rootUpstream;
     }
 
-    public final void setExpectedLengthFrom(String contentLength) {
+    public final void setExpectedLengthFrom(@org.jspecify.annotations.Nullable String contentLength) {
         if (contentLength == null) {
             return;
         }
@@ -388,6 +388,7 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
      * Implementation of {@link BufferConsumer#complete()}.<br>
      * Not thread safe, caller must handle concurrency.
      */
+    @Override
     public void complete() {
         if (expectedLength > lengthSoFar) {
             throw new IncorrectContentLengthException("Received fewer bytes than specified by Content-Length");
@@ -415,6 +416,7 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
      *
      * @param e The error
      */
+    @Override
     public void error(Throwable e) {
         if (error != null) {
             error.addSuppressed(e);
@@ -449,26 +451,26 @@ public abstract class BaseSharedBuffer implements BufferConsumer {
         public AsFlux(BaseSharedBuffer sharedBuffer) {
             this.sharedBuffer = sharedBuffer;
         }
-
-        @Override
-        public void add(ReadBuffer buf) {
-            long newLength = unconsumed.addAndGet(buf.readable());
-            if (newLength > sharedBuffer.getLimits().maxBufferSize()) {
-                sink.tryEmitError(new BufferLengthExceededException(sharedBuffer.getLimits().maxBufferSize(), newLength));
-                buf.close();
-            } else if (sink.tryEmitNext(buf) != Sinks.EmitResult.OK) {
-                buf.close();
-            }
-        }
-
+ 
         @Override
         public void complete() {
             sink.tryEmitComplete();
         }
-
+ 
         @Override
         public void error(Throwable e) {
             sink.tryEmitError(e);
+        }
+
+        @Override
+        public void add(ReadBuffer buf) {
+            long after = unconsumed.addAndGet(buf.readable());
+            if (after > sharedBuffer.limits.maxBufferSize()) {
+                sink.tryEmitError(new BufferLengthExceededException(sharedBuffer.limits.maxBufferSize(), after));
+                buf.close();
+            } else if (sink.tryEmitNext(buf) != Sinks.EmitResult.OK) {
+                buf.close();
+            }
         }
 
         public Flux<ReadBuffer> asFlux(Upstream upstream) {

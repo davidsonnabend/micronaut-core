@@ -80,7 +80,16 @@ public abstract class SslBuilder<T> {
         } catch (Exception e) {
             throw new SslConfigurationException(e);
         }
-        return getTrustManagerFactory(store.orElse(null));
+        KeyStore ks = store.orElseGet(() -> {
+            try {
+                KeyStore empty = KeyStore.getInstance("JKS");
+                empty.load(null, null);
+                return empty;
+            } catch (Exception ex) {
+                throw new SslConfigurationException(ex);
+            }
+        });
+        return getTrustManagerFactory(ks);
     }
 
     /**
@@ -112,11 +121,12 @@ public abstract class SslBuilder<T> {
         Optional<String> path = trustStore.getPath();
         if (path.isPresent()) {
             return Optional.of(loadCompat(new KeyStoreBasedCertificateSpec(
-                trustStore.getType().orElse(null),
-                trustStore.getPassword().orElse(null),
-                trustStore.getProvider().orElse(null),
+                trustStore.getType().orElse("JKS"),
+                trustStore.getPassword().orElse(""),
+                trustStore.getProvider().orElse(""),
                 path.get()
             )));
+
         } else {
             return Optional.empty();
         }
@@ -159,21 +169,10 @@ public abstract class SslBuilder<T> {
                 throw new SslConfigurationException("Cannot specify key store path and key-path or certificate-path at the same time");
             }
             return Optional.of(loadCompat(new KeyStoreBasedCertificateSpec(
-                keyStore.getType().orElse(null),
-                keyStore.getPassword().orElse(null),
-                keyStore.getProvider().orElse(null),
+                keyStore.getType().orElse("JKS"),
+                keyStore.getPassword().orElse(""),
+                keyStore.getProvider().orElse(""),
                 path.get()
-            )));
-        } else if (keyStore.getKeyPath() != null) {
-            if (keyStore.getCertificatePath() == null) {
-                throw new SslConfigurationException("Must also specify certificate-path");
-            }
-            return Optional.of(loadCompat(new PemBasedCertificateSpec(
-                keyStore.getType().orElse(null),
-                keyStore.getPassword().orElse(null),
-                keyStore.getProvider().orElse(null),
-                keyStore.getKeyPath(),
-                keyStore.getCertificatePath()
             )));
         } else if (keyStore.getCertificatePath() != null) {
             throw new SslConfigurationException("Must also specify key-path");
@@ -204,7 +203,8 @@ public abstract class SslBuilder<T> {
     protected KeyStore load(Optional<String> optionalType,
                             String resource,
                             Optional<String> optionalPassword) throws Exception {
-        return load(new KeyStoreBasedCertificateSpec(optionalType.orElse(null), optionalPassword.orElse(null), null, resource));
+            return load(new KeyStoreBasedCertificateSpec(optionalType.orElse("JKS"), optionalPassword.orElse(""), "", resource));
+
     }
 
     private static Supplier<SslConfigurationException> resourceNotFound(String resource) {

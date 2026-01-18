@@ -40,7 +40,7 @@ public class OutgoingHttpRequestProcessorImpl implements OutgoingHttpRequestProc
     public boolean shouldProcessRequest(OutgoingRequestProcessorMatcher matcher, HttpRequest<?> request) {
         Optional<String> serviceId = BasicHttpAttributes.getServiceId(request);
         String uri = request.getUri().toString();
-        return shouldProcessRequest(matcher, serviceId.orElse(null), uri);
+        return shouldProcessRequest(matcher, serviceId.orElse(""), uri);
     }
 
     /**

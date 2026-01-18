@@ -89,7 +89,7 @@ public class SimpleHttpHeaders implements MutableHttpHeaders {
     }
 
     @Override
-    public String get(CharSequence name) {
+    public @org.jspecify.annotations.Nullable String get(CharSequence name) {
         return headers.get(name.toString());
     }
 

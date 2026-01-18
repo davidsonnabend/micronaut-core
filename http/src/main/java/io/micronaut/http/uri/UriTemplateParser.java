@@ -260,7 +260,7 @@ final class UriTemplateParser {
      * @param modifier The modifier
      * @param explode  Is exploded
      */
-    public record Variable(String name, String modifier, boolean explode) {
+    public record Variable(String name, @org.jspecify.annotations.Nullable String modifier, boolean explode) {
     }
 
     /**

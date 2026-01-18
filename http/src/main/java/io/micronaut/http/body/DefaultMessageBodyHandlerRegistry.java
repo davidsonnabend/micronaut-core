@@ -66,19 +66,22 @@ public final class DefaultMessageBodyHandlerRegistry extends AbstractMessageBody
 
     @SuppressWarnings({"unchecked"})
     @Override
-    protected <T> MessageBodyReader<T> findReaderImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes);
-        return beanLocator.getBeansOfType(
+    protected <T> @org.jspecify.annotations.Nullable MessageBodyReader<T> findReaderImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
+        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes == null ? List.of() : mediaTypes);
+        return java.util.Optional.ofNullable(
+            beanLocator.getBeansOfType(
                 Argument.of(MessageBodyReader.class), // Select all readers and eliminate by the type later
                 Qualifiers.byQualifiers(
                     // Filter by media types first before filtering by the type hierarchy
                     new MediaTypeQualifier<>(Argument.of(MessageBodyReader.class, type), resolvedMediaTypes, Consumes.class),
                     MatchArgumentQualifier.covariant(MessageBodyReader.class, type)
                 )
-            ).stream()
-            .filter(reader -> resolvedMediaTypes.stream().anyMatch(mediaType -> reader.isReadable(type, mediaType)))
-            .findFirst()
-            .orElse(null);
+            )
+        ).orElse(List.of())
+         .stream()
+         .filter(reader -> resolvedMediaTypes.stream().anyMatch(mediaType -> reader.isReadable(type, mediaType)))
+         .findFirst()
+         .orElse(null);
     }
 
     private List<MediaType> resolveMediaTypes(List<MediaType> mediaTypes) {
@@ -103,18 +106,21 @@ public final class DefaultMessageBodyHandlerRegistry extends AbstractMessageBody
 
     @SuppressWarnings({"unchecked"})
     @Override
-    protected <T> MessageBodyWriter<T> findWriterImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes);
-        return beanLocator.getBeansOfType(
+    protected <T> @org.jspecify.annotations.Nullable MessageBodyWriter<T> findWriterImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
+        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes == null ? List.of() : mediaTypes);
+        return java.util.Optional.ofNullable(
+            beanLocator.getBeansOfType(
                 Argument.of(MessageBodyWriter.class), // Select all writers and eliminate by the type later
                 Qualifiers.byQualifiers(
                     // Filter by media types first before filtering by the type hierarchy
                     new MediaTypeQualifier<>(Argument.of(MessageBodyWriter.class, type), resolvedMediaTypes, Produces.class),
                     MatchArgumentQualifier.contravariant(MessageBodyWriter.class, type)
                 )
-            ).stream()
-            .filter(writer -> resolvedMediaTypes.stream().anyMatch(mediaType -> writer.isWriteable(type, mediaType)))
-            .findFirst().orElse(null);
+            )
+        ).orElse(List.of())
+         .stream()
+         .filter(writer -> resolvedMediaTypes.stream().anyMatch(mediaType -> writer.isWriteable(type, mediaType)))
+         .findFirst().orElse(null);
     }
 
     private static final class MediaTypeQualifier<T> extends FilteringQualifier<T> {

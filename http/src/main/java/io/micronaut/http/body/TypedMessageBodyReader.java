@@ -35,7 +35,7 @@ public interface TypedMessageBodyReader<T> extends MessageBodyReader<T> {
     Argument<T> getType();
 
     @Override
-    default boolean isReadable(Argument<T> type, MediaType mediaType) {
+    default boolean isReadable(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType) {
         return type.isAssignableFrom(getType()) && !type.getType().equals(Object.class);
     }
 }

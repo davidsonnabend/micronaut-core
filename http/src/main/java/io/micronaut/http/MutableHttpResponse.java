@@ -168,7 +168,7 @@ public interface MutableHttpResponse<B> extends HttpResponse<B>, MutableHttpMess
      * @return This response object
      */
     default MutableHttpResponse<B> status(int status) {
-        return status(status, null);
+        return status(status, (CharSequence) "");
     }
 
     /**
@@ -178,7 +178,7 @@ public interface MutableHttpResponse<B> extends HttpResponse<B>, MutableHttpMess
      * @param message The message
      * @return This response object
      */
-    MutableHttpResponse<B> status(int status, CharSequence message);
+    MutableHttpResponse<B> status(int status, @Nullable CharSequence message);
 
     /**
      * Sets the response status.
@@ -187,7 +187,7 @@ public interface MutableHttpResponse<B> extends HttpResponse<B>, MutableHttpMess
      * @return This response object
      */
     default MutableHttpResponse<B> status(HttpStatus status) {
-        return status(status, null);
+        return status(status, (CharSequence) "");
     }
 
     /**

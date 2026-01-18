@@ -45,10 +45,14 @@ public final class ResourceCertificateProvider implements CertificateProvider {
     ) throws Exception {
         name = config.name;
         byte[] bytes;
-        try (InputStream stream = resourceLoader.getResourceAsStream(config.getResource()).orElseThrow(() -> new ConfigurationException("Resource unavailable: " + config.getResource()))) {
+        String res = config.getResource();
+        if (res == null) {
+            throw new ConfigurationException("Missing resource for certificate provider");
+        }
+        try (InputStream stream = resourceLoader.getResourceAsStream(res).orElseThrow(() -> new ConfigurationException("Resource unavailable: " + res))) {
             bytes = stream.readAllBytes();
         }
-        ks = FileCertificateProvider.load(config, bytes, null);
+        ks = FileCertificateProvider.load(config, bytes, new byte[0]);
     }
 
     @Override
@@ -67,7 +71,7 @@ public final class ResourceCertificateProvider implements CertificateProvider {
     @EachProperty(CONFIG_PREFIX + ".resource")
     @BootstrapContextCompatible
     public static final class Config extends AbstractCertificateFileConfig {
-        private String resource;
+        private String resource = "";
 
         public Config(@Parameter String name) {
             super(name);
@@ -79,7 +83,7 @@ public final class ResourceCertificateProvider implements CertificateProvider {
          * properties in {@link AbstractCertificateFileConfig} (e.g. {@code format}, {@code password}).
          * @return the resource location of the certificate material
          */
-        public String getResource() {
+        public @org.jspecify.annotations.Nullable String getResource() {
             return resource;
         }
 

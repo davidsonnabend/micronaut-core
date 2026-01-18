@@ -54,8 +54,8 @@ public final class StringBodyReader implements TypedMessageBodyReader<String>, C
     }
 
     @Override
-    public String read(Argument<String> type, MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
-        return read0(byteBuffer, getCharset(mediaType, httpHeaders));
+    public String read(Argument<String> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
+        return read0(byteBuffer, getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders));
     }
 
     private String read0(ByteBuffer<?> byteBuffer, Charset charset) {
@@ -67,17 +67,17 @@ public final class StringBodyReader implements TypedMessageBodyReader<String>, C
     }
 
     @Override
-    public String read(Argument<String> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
+    public String read(Argument<String> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
         try {
-            return new String(inputStream.readAllBytes(), getCharset(mediaType, httpHeaders));
+            return new String(inputStream.readAllBytes(), getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders));
         } catch (IOException e) {
             throw new CodecException("Failed to read InputStream", e);
         }
     }
 
     @Override
-    public Publisher<String> readChunked(Argument<String> type, MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
-        return Flux.from(input).map(byteBuffer -> read0(byteBuffer, getCharset(mediaType, httpHeaders)));
+    public Publisher<String> readChunked(Argument<String> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, Publisher<ByteBuffer<?>> input) {
+        return Flux.from(input).map(byteBuffer -> read0(byteBuffer, getCharset(mediaType != null ? mediaType : MediaType.APPLICATION_OCTET_STREAM_TYPE, httpHeaders)));
     }
 
     private Charset getCharset(MediaType mediaType, Headers httpHeaders) {

@@ -47,12 +47,13 @@ abstract sealed class AbstractMessageBodyHandlerRegistry implements MessageBodyH
     private final Map<HandlerKey<?>, MessageBodyReader<?>> readers = new ConcurrentHashMap<>(10);
     private final Map<HandlerKey<?>, MessageBodyWriter<?>> writers = new ConcurrentHashMap<>(10);
 
-    protected abstract <T> MessageBodyReader<T> findReaderImpl(Argument<T> type, List<MediaType> mediaTypes);
+    protected abstract <T> @org.jspecify.annotations.Nullable MessageBodyReader<T> findReaderImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes);
 
     @SuppressWarnings({"unchecked"})
     @Override
-    public <T> Optional<MessageBodyReader<T>> findReader(Argument<T> type, List<MediaType> mediaTypes) {
-        HandlerKey<T> key = new HandlerKey<>(type, mediaTypes);
+    public <T> Optional<MessageBodyReader<T>> findReader(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
+        List<MediaType> keyMediaTypes = mediaTypes == null ? List.of() : mediaTypes;
+        HandlerKey<T> key = new HandlerKey<>(type, keyMediaTypes);
         MessageBodyReader<?> messageBodyReader = readers.get(key);
         if (messageBodyReader == null) {
             MessageBodyReader<T> reader = findReaderImpl(type, mediaTypes);
@@ -71,15 +72,16 @@ abstract sealed class AbstractMessageBodyHandlerRegistry implements MessageBodyH
         }
     }
 
-    protected abstract <T> MessageBodyWriter<T> findWriterImpl(Argument<T> type, List<MediaType> mediaTypes);
+    protected abstract <T> @org.jspecify.annotations.Nullable MessageBodyWriter<T> findWriterImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes);
 
     @SuppressWarnings({"unchecked"})
     @Override
-    public <T> Optional<MessageBodyWriter<T>> findWriter(Argument<T> type, List<MediaType> mediaTypes) {
+    public <T> Optional<MessageBodyWriter<T>> findWriter(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
+        List<MediaType> keyMediaTypes = mediaTypes == null ? List.of() : mediaTypes;
         if (type.getType() == Object.class) {
             return Optional.empty();
         }
-        HandlerKey<T> key = new HandlerKey<>(type, mediaTypes);
+        HandlerKey<T> key = new HandlerKey<>(type, keyMediaTypes);
         MessageBodyWriter<?> messageBodyWriter = writers.get(key);
         if (messageBodyWriter == null) {
             MessageBodyWriter<T> writer = findWriterImpl(type, mediaTypes);
@@ -119,24 +121,24 @@ abstract sealed class AbstractMessageBodyHandlerRegistry implements MessageBodyH
 
     private static final class NoReader implements MessageBodyReader<Object> {
         @Override
-        public boolean isReadable(Argument<Object> type, MediaType mediaType) {
+        public boolean isReadable(Argument<Object> type, @org.jspecify.annotations.Nullable MediaType mediaType) {
             return false;
         }
 
         @Override
-        public Object read(Argument<Object> type, MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
-            return null;
+        public Object read(Argument<Object> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, ByteBuffer<?> byteBuffer) throws CodecException {
+            throw new UnsupportedOperationException();
         }
 
         @Override
-        public Object read(Argument<Object> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
-            return null;
+        public Object read(Argument<Object> type, @org.jspecify.annotations.Nullable MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
+            throw new UnsupportedOperationException();
         }
     }
 
     private static final class NoWriter implements MessageBodyWriter<Object> {
         @Override
-        public boolean isWriteable(Argument<Object> type, MediaType mediaType) {
+        public boolean isWriteable(Argument<Object> type, @org.jspecify.annotations.Nullable MediaType mediaType) {
             return false;
         }
 

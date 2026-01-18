@@ -56,7 +56,7 @@ public class FilterRunner {
      */
     @Nullable
     private final List<InternalHttpFilter> filters;
-    private final BiFunction<HttpRequest<?>, PropagatedContext, ExecutionFlow<HttpResponse<?>>> responseProvider;
+    private final @org.jspecify.annotations.Nullable BiFunction<HttpRequest<?>, PropagatedContext, ExecutionFlow<HttpResponse<?>>> responseProvider;
 
     /**
      * Create a new filter runner, to be used only once.
@@ -88,7 +88,7 @@ public class FilterRunner {
      */
     public FilterRunner(@Nullable List<GenericHttpFilter> preMatchingFilters,
                         @Nullable List<GenericHttpFilter> filters,
-                        BiFunction<HttpRequest<?>, PropagatedContext, ExecutionFlow<HttpResponse<?>>> responseProvider) {
+                        @Nullable BiFunction<HttpRequest<?>, PropagatedContext, ExecutionFlow<HttpResponse<?>>> responseProvider) {
         // GenericHttpFilter is sealed and all implementations implement InternalHttpFilter
         this.preMatchingFilters = (List) preMatchingFilters;
         this.filters = (List) filters;
@@ -176,6 +176,9 @@ public class FilterRunner {
      * @return The flow
      */
     protected ExecutionFlow<HttpResponse<?>> provideResponse(HttpRequest<?> request, PropagatedContext propagatedContext) {
+        if (responseProvider == null) {
+            return ExecutionFlow.error(new IllegalStateException("Response provider not set"));
+        }
         return responseProvider.apply(request, propagatedContext);
     }
 
@@ -222,7 +225,8 @@ public class FilterRunner {
                 try {
                     doRouteMatch(request);
                 } catch (Throwable t) {
-                    return processFailure(request, t, propagatedContext);
+                    ExecutionFlow<HttpResponse<?>> flow = processFailure(request, t, propagatedContext);
+                    return flow != null ? flow : ExecutionFlow.error(t);
                 }
                 filtersToRun = filterFilters(findInternalFiltersAfterRouteMatch(request), request);
                 iterator = filtersToRun.listIterator();
@@ -247,8 +251,11 @@ public class FilterRunner {
         return flow.flatMap(context -> filterResponse(context, iterator, null));
     }
 
-    private List<InternalHttpFilter> filterFilters(List<InternalHttpFilter> filters, HttpRequest<?> request) {
+    private List<InternalHttpFilter> filterFilters(@org.jspecify.annotations.Nullable List<InternalHttpFilter> filters, HttpRequest<?> request) {
         // 1 free spot for the RouteMatchResolverHttpFilter
+        if (filters == null) {
+            return new ArrayList<>(1);
+        }
         List<InternalHttpFilter> filtersToRun = new ArrayList<>(filters.size() + 1);
         for (InternalHttpFilter filter : filters) {
             if (filter.isEnabled(request)) {
@@ -318,8 +325,13 @@ public class FilterRunner {
                 // Imperative flow: Unwrap the context and continue the loop
                 if (context != flowContext) {
                     // Response modified by the filter
-                    flow = processResponse(flowContext.request(), flowContext.response(), flowContext.propagatedContext()).map(flowContext::withResponse);
-                    exception = null;
+                    HttpResponse<?> resp = flowContext.response();
+                    if (resp != null) {
+                        flow = processResponse(flowContext.request(), resp, flowContext.propagatedContext()).map(flowContext::withResponse);
+                        exception = null;
+                    } else {
+                        continue;
+                    }
                     flowContext = flow.tryCompleteValue();
                     if (flowContext != null) {
                         context = flowContext;
@@ -335,8 +347,10 @@ public class FilterRunner {
             return flow
                 .flatMap(newContext -> {
                     if (finalContext != newContext) {
-                        // Response modified by the filter
-                        return processResponse(newContext.request(), newContext.response(), newContext.propagatedContext()).map(newContext::withResponse);
+                        HttpResponse<?> resp2 = newContext.response();
+                        if (resp2 != null) {
+                            return processResponse(newContext.request(), resp2, newContext.propagatedContext()).map(newContext::withResponse);
+                        }
                     }
                     return ExecutionFlow.just(newContext);
                 })
@@ -390,7 +404,7 @@ public class FilterRunner {
      */
     final class RouteMatchResolverHttpFilter implements InternalHttpFilter {
 
-        private ListIterator<InternalHttpFilter> filterIterator;
+        private @org.jspecify.annotations.Nullable ListIterator<InternalHttpFilter> filterIterator;
 
         @Override
         public boolean isFiltersRequest() {
@@ -406,17 +420,18 @@ public class FilterRunner {
             } catch (Throwable throwable) {
                 return processFailurePropagateException(throwable, context);
             } finally {
-                filterIterator.remove();
-                while (filterIterator.hasPrevious()) {
-                    filterIterator.previous();
-                    filterIterator.remove();
+                var it = java.util.Objects.requireNonNull(filterIterator);
+                it.remove();
+                while (it.hasPrevious()) {
+                    it.previous();
+                    it.remove();
                 }
                 List<InternalHttpFilter> postFilters = findInternalFiltersAfterRouteMatch(request);
                 for (InternalHttpFilter postFilter : postFilters) {
-                    filterIterator.add(postFilter);
+                    it.add(postFilter);
                 }
-                while (filterIterator.hasPrevious()) {
-                    filterIterator.previous();
+                while (it.hasPrevious()) {
+                    it.previous();
                 }
             }
         }

@@ -59,7 +59,7 @@ public class SimpleHttpRequestFactory implements HttpRequestFactory {
     }
 
     @Override
-    public <T> MutableHttpRequest<T> delete(String uri, T body) {
+    public <T> MutableHttpRequest<T> delete(String uri, @org.jspecify.annotations.Nullable T body) {
         return new SimpleHttpRequest<>(HttpMethod.DELETE, uri, body);
     }
 

@@ -30,12 +30,12 @@ public class SimpleCookie implements Cookie {
 
     private final String name;
     private String value;
-    private String domain;
-    private String path;
+    private @org.jspecify.annotations.Nullable String domain;
+    private @org.jspecify.annotations.Nullable String path;
     private boolean httpOnly;
     private boolean secure;
     private long maxAge;
-    private SameSite sameSite;
+    private @org.jspecify.annotations.Nullable SameSite sameSite;
 
     /**
      * Constructor.
@@ -59,12 +59,12 @@ public class SimpleCookie implements Cookie {
     }
 
     @Override
-    public String getDomain() {
+    public @org.jspecify.annotations.Nullable String getDomain() {
         return domain;
     }
 
     @Override
-    public String getPath() {
+    public @org.jspecify.annotations.Nullable String getPath() {
         return path;
     }
 
@@ -89,7 +89,7 @@ public class SimpleCookie implements Cookie {
     }
 
     @Override
-    public Cookie sameSite(SameSite sameSite) {
+    public Cookie sameSite(@org.jspecify.annotations.Nullable SameSite sameSite) {
         this.sameSite = sameSite;
         return this;
     }
@@ -107,13 +107,13 @@ public class SimpleCookie implements Cookie {
     }
 
     @Override
-    public Cookie domain(String domain) {
+    public Cookie domain(@org.jspecify.annotations.Nullable String domain) {
         this.domain = domain;
         return this;
     }
 
     @Override
-    public Cookie path(String path) {
+    public Cookie path(@org.jspecify.annotations.Nullable String path) {
         this.path = path;
         return this;
     }

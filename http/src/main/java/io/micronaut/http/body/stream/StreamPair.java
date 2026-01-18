@@ -52,11 +52,13 @@ final class StreamPair {
      * For SLOWEST mode, if one side is currently waiting for the other, this contains the demand
      * information.
      */
+    @org.jetbrains.annotations.Nullable
     private Slowest.SlowestDemand slowestDemand = null;
 
     /**
      * For all modes except SLOWEST, the queue of unprocessed bytes for the slower side.
      */
+    @org.jetbrains.annotations.Nullable
     private ByteQueue queue;
     /**
      * For FASTEST mode, this is the {@link Side#left} flag of the side that is currently slower,
@@ -70,6 +72,7 @@ final class StreamPair {
     /**
      * For ORIGINAL and NEW modes, any read exception.
      */
+    @org.jetbrains.annotations.Nullable
     private IOException singleSideException;
 
     private StreamPair(ExtendedInputStream upstream) {
@@ -144,7 +147,8 @@ final class StreamPair {
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
             lock.lock();
-            lockBody: try {
+            boolean doOutsideRead = false;
+            try {
                 SlowestDemand theirDemand = slowestDemand;
                 if (theirDemand == null) {
                     // other side is not reading yet. wait for them.
@@ -153,10 +157,7 @@ final class StreamPair {
                     do {
                         if (isOtherSideCancelled()) {
                             slowestDemand = null;
-                            // other side should be disregarded. we must exit the lock here to
-                            // avoid long blocking of any further disregardBackpressure calls on
-                            // the other side.
-                            break lockBody;
+                            doOutsideRead = true;
                         }
 
                         try {
@@ -198,8 +199,6 @@ final class StreamPair {
             } finally {
                 lock.unlock();
             }
-            // this is hit when the other side has cancelled their input, see above.
-            return upstream.read(b, off, len);
         }
 
         @Override
@@ -219,7 +218,7 @@ final class StreamPair {
             final int off;
             final int len;
             boolean fulfilled;
-            IOException exception;
+            @org.jspecify.annotations.Nullable IOException exception;
             int actualLength;
 
             SlowestDemand(byte[] dest, int off, int len) {
@@ -242,8 +241,9 @@ final class StreamPair {
         public int read(byte[] b, int off, int len) throws IOException {
             lock.lock();
             try {
-                if (!queue.isEmpty() && fastModeSlowerSide == left) {
-                    return queue.take(b, off, len);
+                ByteQueue q = queue;
+                if (q != null && !q.isEmpty() && fastModeSlowerSide == left) {
+                    return q.take(b, off, len);
                 } else {
                     int n = upstream.read(b, off, len);
                     if (n == -1) {
@@ -251,10 +251,14 @@ final class StreamPair {
                     }
                     if (!isOtherSideCancelled()) {
                         fastModeSlowerSide = !left;
-                        queue.addCopy(b, off, n);
+                        if (q != null) {
+                            q.addCopy(b, off, n);
+                        }
                     } else {
                         // discard queue here because we already hold the lock
-                        queue.clear();
+                        if (q != null) {
+                            q.clear();
+                        }
                     }
                     return n;
                 }
@@ -281,10 +285,16 @@ final class StreamPair {
                 if (n == -1) {
                     singleSideComplete = true;
                 } else if (!isOtherSideCancelled()) {
-                    queue.addCopy(b, off, n);
+                    ByteQueue q = queue;
+                    if (q != null) {
+                        q.addCopy(b, off, n);
+                    }
                 } else {
                     // discard queue here because we already hold the lock
-                    queue.clear();
+                    ByteQueue q = queue;
+                    if (q != null) {
+                        q.clear();
+                    }
                 }
                 // in case other side is waiting, wake them
                 wakeup.signalAll();
@@ -325,8 +335,9 @@ final class StreamPair {
             lock.lock();
             try {
                 while (true) {
-                    if (!queue.isEmpty()) {
-                        return queue.take(b, off, len);
+                    ByteQueue q = queue;
+                    if (q != null && !q.isEmpty()) {
+                        return q.take(b, off, len);
                     }
                     if (singleSideException != null) {
                         throw singleSideException;

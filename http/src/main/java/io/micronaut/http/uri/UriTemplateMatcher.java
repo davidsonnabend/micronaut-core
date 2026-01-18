@@ -496,7 +496,7 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
     }
 
     private record Segment(SegmentType type, String value,
-                           Pattern pattern, String[] regexpVariables) {
+                           @org.jspecify.annotations.Nullable Pattern pattern, @org.jspecify.annotations.Nullable String[] regexpVariables) {
     }
 
     private enum SegmentType {

@@ -36,6 +36,7 @@ import java.util.OptionalLong;
 @Internal
 public abstract class BaseStreamingByteBody<SB extends BaseSharedBuffer> extends InternalByteBody implements CloseableByteBody {
     protected final SB sharedBuffer;
+    @org.jetbrains.annotations.Nullable
     protected BufferConsumer.Upstream upstream;
 
     protected BaseStreamingByteBody(SB sharedBuffer, BufferConsumer.Upstream upstream) {

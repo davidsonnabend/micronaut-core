@@ -123,22 +123,37 @@ public abstract class BaseFilterProcessor<A extends Annotation> implements BeanD
             if (method.isAnnotationPresent(RequestFilter.class)) {
                 FilterMetadata methodLevel = metadata(method, RequestFilter.class);
                 FilterMetadata combined = combineMetadata(beanLevel, methodLevel);
-                addFilter(() -> MethodFilter.prepareFilterMethod(beanContext.getConversionService(), beanContext.getBean(beanDefinition), method, false, combined.order, argumentBinderRegistry, getExecutor(combined)), method, combined);
+                addFilter(() -> MethodFilter.prepareFilterMethod(
+                    beanContext.getConversionService(),
+                    beanContext.getBean(beanDefinition),
+                    method,
+                    false,
+                    new FilterOrder.Dynamic(io.micronaut.core.order.OrderUtil.getOrder(method.getAnnotationMetadata())),
+                    argumentBinderRegistry,
+                    getExecutor(combined)
+                ), method, combined);
             }
             if (method.isAnnotationPresent(ResponseFilter.class)) {
                 FilterMetadata methodLevel = metadata(method, ResponseFilter.class);
                 FilterMetadata combined = combineMetadata(beanLevel, methodLevel);
-                addFilter(() -> MethodFilter.prepareFilterMethod(beanContext.getConversionService(), beanContext.getBean(beanDefinition), method, true, combined.order, argumentBinderRegistry, getExecutor(combined)), method, combined);
+                addFilter(() -> MethodFilter.prepareFilterMethod(
+                    beanContext.getConversionService(),
+                    beanContext.getBean(beanDefinition),
+                    method,
+                    true,
+                    new FilterOrder.Dynamic(io.micronaut.core.order.OrderUtil.getOrder(method.getAnnotationMetadata())),
+                    argumentBinderRegistry,
+                    getExecutor(combined)
+                ), method, combined);
             }
         }
     }
 
-    private Executor getExecutor(FilterMetadata metadata) {
-        if (metadata.executeOn != null) {
+    private @org.jspecify.annotations.Nullable Executor getExecutor(FilterMetadata metadata) {
+        if (metadata.executeOn != null && beanContext != null) {
             return beanContext.getBean(Executor.class, Qualifiers.byName(metadata.executeOn));
-        } else {
-            return null;
         }
+        return null;
     }
 
     private FilterMetadata combineMetadata(FilterMetadata beanLevel, FilterMetadata methodLevel) {

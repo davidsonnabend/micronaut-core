@@ -106,16 +106,22 @@ final class ReactorExecutionFlowImpl implements ReactiveExecutionFlow<Object> {
                 s.request(Long.MAX_VALUE);
             }
 
-            private void complete(T result) {
+            private void complete(@Nullable T result) {
                 if (!flow.compareAndSet(null, ExecutionFlow.just(result))) {
-                    ((DelayedExecutionFlow<T>) flow.get()).complete(result);
+                    DelayedExecutionFlow<T> deferred = (DelayedExecutionFlow<T>) flow.get();
+                    if (deferred != null) {
+                        deferred.complete(result);
+                    }
                 }
                 complete = true;
             }
 
             private void completeError(Throwable t) {
                 if (!flow.compareAndSet(null, ExecutionFlow.error(t))) {
-                    ((DelayedExecutionFlow<?>) flow.get()).completeExceptionally(t);
+                    DelayedExecutionFlow<?> deferred = (DelayedExecutionFlow<?>) flow.get();
+                    if (deferred != null) {
+                        deferred.completeExceptionally(t);
+                    }
                 }
                 complete = true;
             }
@@ -140,9 +146,9 @@ final class ReactorExecutionFlowImpl implements ReactiveExecutionFlow<Object> {
 
             @Override
             public void onComplete() {
-                if (!complete) {
-                    complete(null);
-                }
+                    if (!complete) {
+                        complete((T) null);
+                    }
             }
         };
         try (PropagatedContext.Scope ignored = propagatedContext.propagate()) {
@@ -206,11 +212,11 @@ final class ReactorExecutionFlowImpl implements ReactiveExecutionFlow<Object> {
 
     @Override
     public void cancel() {
-        List<Subscription> stc;
-        synchronized (this) {
-            stc = subscriptionsToCancel;
-            subscriptionsToCancel = null;
-        }
+            List<Subscription> stc;
+            synchronized (this) {
+                stc = subscriptionsToCancel;
+                subscriptionsToCancel = new ArrayList<>(0);
+            }
         if (stc != null) {
             for (Subscription subscription : stc) {
                 subscription.cancel();
@@ -233,8 +239,8 @@ final class ReactorExecutionFlowImpl implements ReactiveExecutionFlow<Object> {
         }
         value.subscribe(new CoreSubscriber<>() {
 
-            Subscription subscription;
-            Object value;
+            @org.jspecify.annotations.Nullable Subscription subscription;
+            @org.jspecify.annotations.Nullable Object value;
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -287,8 +293,8 @@ final class ReactorExecutionFlowImpl implements ReactiveExecutionFlow<Object> {
         }
         value.subscribe(new CoreSubscriber<>() {
 
-            Subscription subscription;
-            Object value;
+            @org.jspecify.annotations.Nullable Subscription subscription;
+            @org.jspecify.annotations.Nullable Object value;
 
             @Override
             public void onSubscribe(Subscription s) {

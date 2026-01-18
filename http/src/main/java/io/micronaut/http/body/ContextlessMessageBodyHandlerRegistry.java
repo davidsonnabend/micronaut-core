@@ -97,19 +97,32 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
     }
 
     @Override
-    protected <T> MessageBodyReader<T> findReaderImpl(Argument<T> type, List<MediaType> mediaTypes) {
+    protected <T> @org.jspecify.annotations.Nullable MessageBodyReader<T> findReaderImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
         for (TypedMessageBodyReader<?> messageBodyReader : typedMessageBodyReaders) {
+            @SuppressWarnings("unchecked")
             TypedMessageBodyReader<T> reader = (TypedMessageBodyReader<T>) messageBodyReader;
-            if (type.getType().isAssignableFrom(reader.getType().getType())
-                && (mediaTypes.isEmpty() && reader.isReadable(type, null))
-                || mediaTypes.stream().anyMatch(mt -> reader.isReadable(type, mt))) {
-                return reader;
+            if (type.getType().isAssignableFrom(reader.getType().getType())) {
+                if (mediaTypes == null || mediaTypes.isEmpty()) {
+                    if (reader.isReadable(type, null)) {
+                        return reader;
+                    }
+                } else {
+                    for (MediaType mt : mediaTypes) {
+                        if (reader.isReadable(type, mt)) {
+                            return reader;
+                        }
+                    }
+                }
             }
         }
-        for (MediaType mediaType : mediaTypes) {
-            for (ReaderEntry entry : readerEntries) {
-                if (mediaType.matches(entry.mediaType)) {
-                    return (MessageBodyReader<T>) entry.handler;
+        if (mediaTypes != null) {
+            for (MediaType mediaType : mediaTypes) {
+                for (ReaderEntry entry : readerEntries) {
+                    if (mediaType.matches(entry.mediaType)) {
+                        @SuppressWarnings("unchecked")
+                        MessageBodyReader<T> h = (MessageBodyReader<T>) entry.handler;
+                        return h;
+                    }
                 }
             }
         }
@@ -117,19 +130,30 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
     }
 
     @Override
-    protected <T> MessageBodyWriter<T> findWriterImpl(Argument<T> type, List<MediaType> mediaTypes) {
+    protected <T> @org.jspecify.annotations.Nullable MessageBodyWriter<T> findWriterImpl(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaTypes) {
         for (TypedMessageBodyWriter<?> messageBodyReader : typedMessageBodyWriters) {
+            @SuppressWarnings("unchecked")
             TypedMessageBodyWriter<T> writer = (TypedMessageBodyWriter<T>) messageBodyReader;
-            if (messageBodyReader.getType().isAssignableFrom(type.getType())
-                && (mediaTypes.isEmpty() && writer.isWriteable(type, null)
-                || mediaTypes.stream().anyMatch(mt -> writer.isWriteable(type, mt)))) {
-                return (MessageBodyWriter<T>) messageBodyReader;
+            if (messageBodyReader.getType().isAssignableFrom(type.getType())) {
+                if (mediaTypes == null || mediaTypes.isEmpty()) {
+                    if (writer.isWriteable(type, null)) {
+                        return (MessageBodyWriter<T>) messageBodyReader;
+                    }
+                } else {
+                    for (MediaType mt : mediaTypes) {
+                        if (writer.isWriteable(type, mt)) {
+                            return (MessageBodyWriter<T>) messageBodyReader;
+                        }
+                    }
+                }
             }
         }
-        for (MediaType mediaType : mediaTypes) {
-            for (WriterEntry entry : writerEntries) {
-                if (mediaType.matches(entry.mediaType)) {
-                    return (MessageBodyWriter<T>) entry.handler;
+        if (mediaTypes != null) {
+            for (MediaType mediaType : mediaTypes) {
+                for (WriterEntry entry : writerEntries) {
+                    if (mediaType.matches(entry.mediaType)) {
+                        return (MessageBodyWriter<T>) entry.handler;
+                    }
                 }
             }
         }
@@ -142,3 +166,4 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
     private record WriterEntry(MessageBodyWriter<?> handler, MediaType mediaType) {
     }
 }
+

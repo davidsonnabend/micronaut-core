@@ -15,6 +15,9 @@ tasks.withType(JavaCompile).configureEach {
         check("NullAway", CheckSeverity.ERROR)
         check("MissingOverride", CheckSeverity.ERROR)
         option("NullAway:AnnotatedPackages", "io.micronaut")
+        option("NullAway:CustomNullableAnnotations", "org.jspecify.annotations.Nullable,org.jetbrains.annotations.Nullable")
+        // Recognize JSpecify @NullMarked/@Nullable semantics
+        option("NullAway:CustomNullableAnnotations", "org.jspecify.annotations.Nullable,org.jetbrains.annotations.Nullable")
     }
     // Disable NullAway on test code and TCK
     if (name.toLowerCase().contains("test") || project.name.contains("tck")) {

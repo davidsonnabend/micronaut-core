@@ -73,7 +73,7 @@ public class SimpleHttpParameters implements MutableHttpParameters {
     }
 
     @Override
-    public String get(CharSequence name) {
+    public @org.jspecify.annotations.Nullable String get(CharSequence name) {
         return values.get(name);
     }
 

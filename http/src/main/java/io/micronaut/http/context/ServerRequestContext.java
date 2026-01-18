@@ -50,6 +50,12 @@ public final class ServerRequestContext {
      * @param runnable The runnable
      */
     public static void with(@Nullable HttpRequest<?> request, Runnable runnable) {
+        if (request == null) {
+            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().propagate()) {
+                runnable.run();
+            }
+            return;
+        }
         try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(request)).propagate()) {
             runnable.run();
         }
@@ -75,6 +81,11 @@ public final class ServerRequestContext {
      * @return The return value of the callable
      */
     public static <T> T with(@Nullable HttpRequest<?> request, Supplier<T> supplier) {
+        if (request == null) {
+            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().propagate()) {
+                return supplier.get();
+            }
+        }
         try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(request)).propagate()) {
             return supplier.get();
         }
@@ -90,6 +101,11 @@ public final class ServerRequestContext {
      * @throws Exception If the callable throws an exception
      */
     public static <T> T with(@Nullable HttpRequest<?> request, Callable<T> callable) throws Exception {
+        if (request == null) {
+            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().propagate()) {
+                return callable.call();
+            }
+        }
         try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(request)).propagate()) {
             return callable.call();
         }

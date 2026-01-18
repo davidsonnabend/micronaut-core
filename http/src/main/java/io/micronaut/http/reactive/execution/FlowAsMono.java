@@ -90,8 +90,8 @@ final class FlowAsMono<T> extends Mono<T> implements Fuseable {
 
         private boolean requested;
 
-        private T result;
-        private Throwable error;
+        private @org.jspecify.annotations.Nullable T result;
+        private @org.jspecify.annotations.Nullable Throwable error;
 
         SubscriptionImpl(CoreSubscriber<? super T> actual) {
             this.actual = actual;
@@ -122,11 +122,11 @@ final class FlowAsMono<T> extends Mono<T> implements Fuseable {
             }
         }
 
-        private void forward(T v, Throwable e) {
+        private void forward(@org.jspecify.annotations.Nullable T v, @org.jspecify.annotations.Nullable Throwable e) {
             if (v != null) {
                 actual.onNext(v);
             }
-            if (error == null) {
+            if (e == null) {
                 actual.onComplete();
             } else {
                 actual.onError(e);

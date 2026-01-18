@@ -141,20 +141,20 @@ record MethodFilter<T>(FilterOrder order,
                 if (!isResponseFilter) {
                     throw new IllegalArgumentException("Filter is called before the response is known, can't have a response argument");
                 }
-                fulfilled[i] = ctx -> ctx.response;
+                fulfilled[i] = ctx -> java.util.Optional.ofNullable(ctx.response);
             } else if (Throwable.class.isAssignableFrom(argumentType)) {
                 if (!isResponseFilter) {
                     throw new IllegalArgumentException("Request filters cannot handle exceptions");
                 }
                 if (!argument.isNullable()) {
                     filterCondition = filterCondition.and(ctx -> ctx.failure != null && argument.isInstance(ctx.failure));
-                    fulfilled[i] = ctx -> ctx.failure;
+                    fulfilled[i] = ctx -> java.util.Optional.ofNullable(ctx.failure);
                 } else {
                     fulfilled[i] = ctx -> {
                         if (ctx.failure != null && argument.isInstance(ctx.failure)) {
                             return ctx.failure;
                         }
-                        return null;
+                        return java.util.Optional.empty();
                     };
                 }
                 filtersException = true;
@@ -173,10 +173,10 @@ record MethodFilter<T>(FilterOrder order,
                     } else {
                         continuationCreator = ReactiveContinuationImpl::new;
                     }
-                    fulfilled[i] = ctx -> ctx.continuation;
+                    fulfilled[i] = ctx -> java.util.Optional.ofNullable(ctx.continuation);
                 } else if (continuationReturnType.getType().isAssignableFrom(MutableHttpResponse.class)) {
                     continuationCreator = BlockingContinuationImpl::new;
-                    fulfilled[i] = ctx -> ctx.continuation;
+                    fulfilled[i] = ctx -> java.util.Optional.ofNullable(ctx.continuation);
                 } else {
                     throw new IllegalArgumentException("Unsupported continuation type: " + continuationReturnType);
                 }
@@ -187,7 +187,7 @@ record MethodFilter<T>(FilterOrder order,
                 if (argumentBinder != null) {
                     if (argumentBinder instanceof BaseFilterProcessor.AsyncBodyBinder<Object> async) {
                         if (isResponseFilter) {
-                            throw new IllegalArgumentException("Cannot bind @Body in response filter method [" + method.getDescription(true) + "]");
+                            throw new IllegalArgumentException("Cannot bind @Body in response filter method [" + java.util.Objects.requireNonNull(method).getDescription(true) + "]");
                         }
                         if (asyncArgBinders == null) {
                             asyncArgBinders = new AsyncFilterArgBinder[arguments.length];
@@ -202,7 +202,7 @@ record MethodFilter<T>(FilterOrder order,
                             HttpRequest<?> request = ctx.request;
                             ArgumentConversionContext<Object> conversionContext = (ArgumentConversionContext<Object>) ConversionContext.of(argument);
                             ArgumentBinder.BindingResult<Object> result = argumentBinder.bind(conversionContext, request);
-                            return convertResult(method, argument, result);
+                            return java.util.Objects.requireNonNull(convertResult(method, argument, result));
                         };
                         if (argumentBinder instanceof FilterArgumentBinderPredicate pred) {
                             filterCondition = filterCondition.and(ctx -> pred.test(argument, ctx.mutablePropagatedContext, ctx.request, ctx.response, ctx.failure));
@@ -219,10 +219,10 @@ record MethodFilter<T>(FilterOrder order,
             filterCondition = null;
         }
         FilterReturnHandler returnHandler = prepareReturnHandler(conversionService, returnType, isResponseFilter, continuationCreator != null, false);
-        return new MethodFilter<>(
+            return new MethodFilter<>(
             order,
-            bean,
-            method,
+            java.util.Objects.requireNonNull(bean),
+            java.util.Objects.requireNonNull(method),
             method instanceof UnsafeExecutable unsafeExecutable ? unsafeExecutable : null,
             isResponseFilter,
             fulfilled,
@@ -232,11 +232,11 @@ record MethodFilter<T>(FilterOrder order,
             filtersException,
             returnHandler,
             bean instanceof ConditionalFilter,
-            executor
+            java.util.Objects.requireNonNullElseGet(executor, () -> Runnable::run)
         );
     }
 
-    private static <T> Object convertResult(@Nullable ExecutableMethod<T, ?> method, Argument<?> argument, ArgumentBinder.BindingResult<Object> result) {
+    private static <T> @org.jspecify.annotations.Nullable Object convertResult(@Nullable ExecutableMethod<T, ?> method, Argument<?> argument, ArgumentBinder.BindingResult<Object> result) {
         if (result.isPresentAndSatisfied() || (argument.isNullable() && result.isSatisfied())) {
             return result.getValue().orElse(null);
         } else {
@@ -244,7 +244,7 @@ record MethodFilter<T>(FilterOrder order,
             if (!conversionErrors.isEmpty()) {
                 throw new ConversionErrorException(argument, conversionErrors.get(0));
             } else {
-                throw new IllegalArgumentException("Unbindable argument [" + argument + "] to method [" + method.getDescription(true) + "]");
+                throw new IllegalArgumentException("Unbindable argument [" + argument + "] to method [" + java.util.Objects.requireNonNull(method).getDescription(true) + "]");
             }
         }
     }
@@ -288,7 +288,7 @@ record MethodFilter<T>(FilterOrder order,
             context.response(),
             null,
             null);
-        return filter(context, filterMethodContext, null, false);
+        return filter(context, filterMethodContext, new Object[0], false);
     }
 
     @Override
@@ -304,11 +304,11 @@ record MethodFilter<T>(FilterOrder order,
             context.response(),
             null,
             createContinuation(downstream, context, mutablePropagatedContext));
-        return filter(context, filterMethodContext, null, false);
+        return filter(context, filterMethodContext, new Object[0], false);
     }
 
     @Override
-    public ExecutionFlow<FilterContext> processResponseFilter(FilterContext context, Throwable exceptionToFilter) {
+    public ExecutionFlow<FilterContext> processResponseFilter(FilterContext context, @org.jspecify.annotations.Nullable Throwable exceptionToFilter) {
         if (exceptionToFilter != null && !filtersException) {
             return ExecutionFlow.just(context);
         }
@@ -321,24 +321,27 @@ record MethodFilter<T>(FilterOrder order,
             context.response(),
             exceptionToFilter,
             null);
-        return filter(context, filterMethodContext, null, false);
+        return filter(context, filterMethodContext, new Object[0], false);
     }
 
     @Override
     public int getOrder() {
+        java.util.Objects.requireNonNull(bean);
+        
         return order.getOrder(bean);
     }
 
     private InternalFilterContinuation<?> createContinuation(Function<FilterContext, ExecutionFlow<FilterContext>> downstream,
                                                              FilterContext filterContext,
                                                              MutablePropagatedContext mutablePropagatedContext) {
-        return continuationCreator.create(downstream, filterContext, mutablePropagatedContext);
+        return java.util.Objects.requireNonNull(continuationCreator)
+            .create(downstream, filterContext, mutablePropagatedContext);
     }
 
     private ExecutionFlow<FilterContext> filter(
         FilterContext filterContext,
         FilterMethodContext methodContext,
-        Object[] args,
+        @org.jspecify.annotations.Nullable Object[] args,
         boolean onExecutor
     ) {
         // this is intentionally one method instead of three nested ones to reduce stacktrace depth
@@ -372,7 +375,7 @@ record MethodFilter<T>(FilterOrder order,
             }
             ExecutionFlow<FilterContext> executionFlow = returnHandler.handle(filterContext, returnValue, methodContext.continuation);
             PropagatedContext mutatedPropagatedContext = methodContext.mutablePropagatedContext.getContext();
-            if (mutatedPropagatedContext != filterContext.propagatedContext()) {
+            if (mutatedPropagatedContext != null && mutatedPropagatedContext != filterContext.propagatedContext()) {
                 executionFlow = executionFlow.map(fc -> fc.withPropagatedContext(mutatedPropagatedContext));
             }
             return executionFlow;
@@ -382,9 +385,10 @@ record MethodFilter<T>(FilterOrder order,
     }
 
     private Object[] bindArgsSync(FilterMethodContext context) {
-        Object[] args = new Object[argBinders.length];
+        FilterArgBinder[] binders = argBinders == null ? new FilterArgBinder[0] : argBinders;
+        Object[] args = new Object[binders.length];
         for (int i = 0; i < args.length; i++) {
-            FilterArgBinder binder = argBinders[i];
+            FilterArgBinder binder = binders[i];
             if (binder != null) {
                 args[i] = binder.bind(context);
             }
@@ -393,7 +397,6 @@ record MethodFilter<T>(FilterOrder order,
     }
 
     private ExecutionFlow<Object[]> bindArgsAsync(FilterMethodContext context) {
-        assert asyncArgBinders != null;
         Object[] args;
         try {
             args = bindArgsSync(context);
@@ -401,8 +404,12 @@ record MethodFilter<T>(FilterOrder order,
             return ExecutionFlow.error(e);
         }
         ExecutionFlow<Object[]> result = ExecutionFlow.just(args);
-        for (int i = 0; i < asyncArgBinders.length; i++) {
-            AsyncFilterArgBinder binder = asyncArgBinders[i];
+        AsyncFilterArgBinder[] asyncBinders = asyncArgBinders;
+        if (asyncBinders == null) {
+            return result.map(o -> args);
+        }
+        for (int i = 0; i < asyncBinders.length; i++) {
+            AsyncFilterArgBinder binder = asyncBinders[i];
             if (binder != null) {
                 int position = i;
                 result = result.flatMap(a -> binder.bind(context).map(arg -> {
@@ -467,7 +474,7 @@ record MethodFilter<T>(FilterOrder order,
                 if (returnValue == null && !nullable) {
                     return next.handle(context, null, continuation);
                 }
-                Publisher<Object> converted = Publishers.convertToPublisher(conversionService, returnValue);
+                Publisher<Object> converted = Publishers.convertToPublisher(conversionService, java.util.Objects.requireNonNull(returnValue));
                 if (continuation instanceof ResultAwareContinuation resultAwareContinuation) {
                     return resultAwareContinuation.processResult(ReactivePropagation.propagate(
                         context.propagatedContext(),
@@ -486,7 +493,7 @@ record MethodFilter<T>(FilterOrder order,
             var next = prepareReturnHandler(conversionService, type.getWrappedType(), isResponseFilter, hasContinuation, false);
             return new DelayedFilterReturnHandler(isResponseFilter, next, nullable) {
                 @Override
-                protected ExecutionFlow<?> toFlow(FilterContext context, Object returnValue, InternalFilterContinuation<?> continuation) {
+                protected ExecutionFlow<?> toFlow(FilterContext context, Object returnValue, @org.jspecify.annotations.Nullable InternalFilterContinuation<?> continuation) {
                     //noinspection unchecked
                     return CompletableFutureExecutionFlow.just(((CompletionStage<Object>) returnValue).toCompletableFuture());
                 }
@@ -527,7 +534,7 @@ record MethodFilter<T>(FilterOrder order,
         /**
          * Void method that accepts a continuation.
          */
-        FilterReturnHandler VOID_WITH_CONTINUATION = (filterContext, returnValue, continuation) -> ExecutionFlow.just(continuation.afterMethodContext());
+        FilterReturnHandler VOID_WITH_CONTINUATION = (filterContext, returnValue, continuation) -> ExecutionFlow.just(java.util.Objects.requireNonNull(continuation).afterMethodContext());
         /**
          * Void method.
          */
@@ -626,7 +633,7 @@ record MethodFilter<T>(FilterOrder order,
         @Override
         public ExecutionFlow<FilterContext> handle(FilterContext context,
                                                    @Nullable Object returnValue,
-                                                   InternalFilterContinuation<?> continuation) throws Throwable {
+                                                   @org.jspecify.annotations.Nullable InternalFilterContinuation<?> continuation) throws Throwable {
             if (returnValue == null && nullable) {
                 return next.handle(context, null, continuation);
             }
@@ -711,7 +718,9 @@ record MethodFilter<T>(FilterOrder order,
             PropagatedContext propagatedContext = filterContext.propagatedContext();
             PropagatedContext mutatedPropagatedContext = mutablePropagatedContext.getContext();
             if (propagatedContext != mutatedPropagatedContext) {
-                filterContext = filterContext.withPropagatedContext(mutatedPropagatedContext);
+                if (mutatedPropagatedContext != null) {
+                    filterContext = filterContext.withPropagatedContext(mutatedPropagatedContext);
+                }
             } else {
                 filterContext = filterContext.withPropagatedContext(PropagatedContext.find().orElse(filterContext.propagatedContext()));
             }
@@ -764,7 +773,9 @@ record MethodFilter<T>(FilterOrder order,
             PropagatedContext propagatedContext = filterContext.propagatedContext();
             PropagatedContext mutatedPropagatedContext = mutablePropagatedContext.getContext();
             if (propagatedContext != mutatedPropagatedContext) {
-                filterContext = filterContext.withPropagatedContext(mutatedPropagatedContext);
+                if (mutatedPropagatedContext != null) {
+                    filterContext = filterContext.withPropagatedContext(mutatedPropagatedContext);
+                }
             } else {
                 filterContext = filterContext.withPropagatedContext(PropagatedContext.find().orElse(filterContext.propagatedContext()));
             }
@@ -784,7 +795,11 @@ record MethodFilter<T>(FilterOrder order,
                     if (interrupted) {
                         Thread.currentThread().interrupt();
                     }
-                    return filterContext.response();
+                    HttpResponse<?> resp = filterContext.response();
+                    if (resp == null) {
+                        throw new IllegalStateException("Filter returned null response");
+                    }
+                    return resp;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     interrupted = true;

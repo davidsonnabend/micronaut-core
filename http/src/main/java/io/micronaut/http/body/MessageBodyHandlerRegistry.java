@@ -36,7 +36,7 @@ public interface MessageBodyHandlerRegistry {
      */
     MessageBodyHandlerRegistry EMPTY = new MessageBodyHandlerRegistry() {
         @Override
-        public <T> Optional<MessageBodyReader<T>> findReader(Argument<T> type, List<MediaType> mediaType) {
+        public <T> Optional<MessageBodyReader<T>> findReader(Argument<T> type, @org.jspecify.annotations.Nullable List<MediaType> mediaType) {
             return Optional.empty();
         }
 

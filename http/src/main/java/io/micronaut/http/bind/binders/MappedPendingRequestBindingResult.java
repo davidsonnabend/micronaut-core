@@ -27,6 +27,7 @@ import java.util.function.Function;
 final class MappedPendingRequestBindingResult<T, R> implements PendingRequestBindingResult<R> {
     private final PendingRequestBindingResult<T> source;
     private final Function<T, ArgumentBinder.BindingResult<R>> function;
+    @org.jetbrains.annotations.Nullable
     private ArgumentBinder.BindingResult<R> second;
 
     MappedPendingRequestBindingResult(PendingRequestBindingResult<T> source, Function<T, ArgumentBinder.BindingResult<R>> function) {

@@ -35,7 +35,7 @@ public interface TypedMessageBodyWriter<T> extends MessageBodyWriter<T> {
     Argument<T> getType();
 
     @Override
-    default boolean isWriteable(Argument<T> type, MediaType mediaType) {
+    default boolean isWriteable(Argument<T> type, @org.jspecify.annotations.Nullable MediaType mediaType) {
         return getType().isAssignableFrom(type);
     }
 }
